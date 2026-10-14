@@ -47,6 +47,12 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Pieza fantasma** (_ghost piece_): muestra dónde aterrizará la pieza actual.
 - **Vista previa** de la siguiente pieza.
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
+- **Combos y multiplicadores**: limpiar líneas en piezas consecutivas multiplica la puntuación (x2, x3, x4…); una pieza que no limpia líneas reinicia el combo (los power-ups no lo rompen).
+  - **T-spin**: girar una T como último movimiento con ≥3 esquinas ocupadas (400 / 800 / 1200 / 1600 según líneas).
+  - **Back-to-Back**: Tetris o T-spin con líneas seguidos de otro igual → ×1.5.
+  - **Perfect Clear**: dejar el tablero vacío suma 800 / 1200 / 1800 / 2000 × nivel.
+  - Fórmula: `base × (B2B ? 1.5 : 1) × combo × nivel` (+ Perfect Clear).
+  - Efectos visuales (destello, textos, sacudida) y sonido (Web Audio); `M` silencia.
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
 
@@ -92,6 +98,7 @@ Después abre `http://localhost:8000` en el navegador.
 | `↓`       | Soft drop (bajar más rápido)      |
 | `Espacio` | Hard drop (caída instantánea)     |
 | `P`       | Pausar / reanudar                 |
+| `M`       | Silenciar / activar sonido        |
 
 Además, el botón **Modo claro / Modo oscuro** (arriba a la derecha) alterna el tema. El juego inicia siempre en modo oscuro.
 
@@ -189,6 +196,9 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `POWERUP_LINES` | Líneas necesarias para un power-up    | `5`                   |
 | `FREEZE_MS`    | Duración de Congelar en ms               | `5000`                |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
+| `TSPIN_SCORES` | Puntos de T-spin con 0, 1, 2 o 3 líneas  | `[400,800,1200,1600]` |
+| `PERFECT_SCORES` | Bonus de Perfect Clear por nº de líneas | `[0,800,1200,1800,2000]` |
+| `B2B_MULT`     | Multiplicador Back-to-Back               | `1.5`                 |
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
 
 Los colores de la interfaz son variables CSS (`--bg`, `--accent`, `--grid`, …) definidas en `:root` de `style.css`; el tema claro las redefine en `:root[data-theme="light"]`.

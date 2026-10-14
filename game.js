@@ -61,6 +61,10 @@ const PIECES = [
 ];
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
+const TSPIN_SCORES = [400, 800, 1200, 1600];
+const PERFECT_SCORES = [0, 800, 1200, 1800, 2000];
+const B2B_MULT = 1.5;
+const TSPIN_NAMES = ['T-SPIN', 'T-SPIN SINGLE', 'T-SPIN DOUBLE', 'T-SPIN TRIPLE'];
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -74,11 +78,60 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeBtn = document.getElementById('theme-toggle');
+const comboEl = document.getElementById('combo');
 
 let gridColor = '#22222e';
 let highlightColor = 'rgba(255,255,255,0.12)';
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending, powerupPending, powerupLines, freezeLeft;
+let combo, b2b, lastRotate, effects, shakeLeft, shakePower;
+let muted = false;
+let audioCtx = null;
+
+function getAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function beep(freq, dur, type = 'square', delay = 0, vol = 0.08) {
+  if (muted) return;
+  const ac = getAudio();
+  if (!ac) return;
+  const t = ac.currentTime + delay;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain);
+  gain.connect(ac.destination);
+  osc.start(t);
+  osc.stop(t + dur);
+}
+
+function playClearSound(cleared, comboN, special, perfect) {
+  const base = 330 * Math.pow(2, Math.min(comboN - 1, 12) / 12);
+  beep(base, 0.15, 'square');
+  if (cleared >= 4 || special) {
+    beep(base * 1.25, 0.15, 'square', 0.08);
+    beep(base * 1.5, 0.2, 'square', 0.16);
+  }
+  if (perfect) [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.25, 'triangle', 0.25 + i * 0.1, 0.1));
+}
+
+function addText(text, color, size = 22) {
+  effects.push({ kind: 'text', text, color, size, life: 1200, max: 1200 });
+}
+
+function addShake(power) {
+  shakePower = shakeLeft > 0 ? Math.max(shakePower, power) : power;
+  shakeLeft = 300;
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -127,9 +180,21 @@ function tryRotate() {
     if (!collide(rotated, current.x + kick, current.y)) {
       current.shape = rotated;
       current.x += kick;
+      lastRotate = true;
       return;
     }
   }
+}
+
+// regla de 3 esquinas: la T (siempre 3×3) está en T-spin si ≥3 esquinas diagonales al centro están ocupadas
+function isTSpin() {
+  const cx = current.x + 1, cy = current.y + 1;
+  let filled = 0;
+  for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const nx = cx + dx, ny = cy + dy;
+    if (nx < 0 || nx >= COLS || ny >= ROWS || (ny >= 0 && board[ny][nx])) filled++;
+  }
+  return filled >= 3;
 }
 
 function merge() {
@@ -139,8 +204,9 @@ function merge() {
         board[current.y + r][current.x + c] = current.shape[r][c];
 }
 
-function clearLines() {
+function clearLines(tspin, isPowerup) {
   let cleared = 0;
+  const clearedRows = [];
   for (let r = ROWS - 1; r >= 0; r--) {
     // los comodines pueden rellenar huecos de la fila (uno por comodín)
     const empty = board[r].filter(v => v === 0).length;
@@ -148,23 +214,53 @@ function clearLines() {
     if (empty <= wild) {
       board.splice(r, 1);
       board.unshift(new Array(COLS).fill(0));
+      clearedRows.push(r - cleared); // fila en coordenadas previas a la limpieza
       cleared++;
       r++;
     }
   }
-  if (cleared) {
-    if (cleared === 4) rewardPending = true;
-    powerupLines += cleared;
-    if (powerupLines >= POWERUP_LINES) {
-      powerupLines %= POWERUP_LINES;
-      powerupPending = true;
+  if (!cleared) {
+    if (tspin) {
+      score += TSPIN_SCORES[0] * level;
+      addText(TSPIN_NAMES[0], '#ba68c8');
+      playClearSound(0, 1, true, false);
+    } else if (!isPowerup) {
+      combo = 0;
     }
-    lines += cleared;
-    score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
+    return;
   }
+
+  combo++;
+  const difficult = cleared === 4 || tspin;
+  const b2bApplies = difficult && b2b;
+  b2b = difficult;
+  const base = tspin ? TSPIN_SCORES[cleared] : LINE_SCORES[cleared];
+  score += Math.round(base * (b2bApplies ? B2B_MULT : 1) * combo * level);
+
+  if (cleared === 4) rewardPending = true;
+  powerupLines += cleared;
+  if (powerupLines >= POWERUP_LINES) {
+    powerupLines %= POWERUP_LINES;
+    powerupPending = true;
+  }
+  lines += cleared;
+  level = Math.floor(lines / 10) + 1;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+
+  const perfect = board.every(row => row.every(v => !v));
+  if (perfect) score += PERFECT_SCORES[cleared] * level;
+
+  // efectos
+  effects.push({ kind: 'flash', rows: clearedRows, life: 250, max: 250 });
+  if (tspin) addText(TSPIN_NAMES[cleared], '#ba68c8');
+  else if (cleared === 4) addText('TETRIS', '#4dd0e1', 26);
+  if (b2bApplies) addText('BACK-TO-BACK x' + B2B_MULT, '#ffd54f');
+  if (combo > 1) addText('COMBO x' + combo, `hsl(${Math.max(0, 50 - combo * 8)}, 90%, 60%)`, 20 + Math.min(combo, 8));
+  if (perfect) addText('PERFECT CLEAR', '#fff176', 26);
+  if (combo >= 3 || b2bApplies || perfect) addShake(Math.min(2 + combo, 10) + (perfect ? 4 : 0));
+  playClearSound(cleared, combo, tspin || b2bApplies, perfect);
+  updateHUD();
 }
 
 function ghostY() {
@@ -176,6 +272,7 @@ function ghostY() {
 function hardDrop() {
   const gy = ghostY();
   score += (gy - current.y) * 2;
+  if (gy > current.y) lastRotate = false;
   current.y = gy;
   lockPiece();
 }
@@ -183,6 +280,7 @@ function hardDrop() {
 function softDrop() {
   if (!collide(current.shape, current.x, current.y + 1)) {
     current.y++;
+    lastRotate = false;
     score += 1;
     updateHUD();
   } else {
@@ -228,13 +326,16 @@ function applyPowerup(type, x, y) {
 }
 
 function lockPiece() {
-  if (POWERUPS.includes(current.type)) applyPowerup(current.type, current.x, current.y);
+  const isPowerup = POWERUPS.includes(current.type);
+  const tspin = current.type === 3 && lastRotate && isTSpin();
+  if (isPowerup) applyPowerup(current.type, current.x, current.y);
   else merge();
-  clearLines();
+  clearLines(tspin, isPowerup);
   spawn();
 }
 
 function spawn() {
+  lastRotate = false;
   if (powerupPending) {
     current = makePiece(POWERUPS[Math.floor(Math.random() * POWERUPS.length)]);
     powerupPending = false;
@@ -255,6 +356,33 @@ function updateHUD() {
   scoreEl.textContent = score.toLocaleString();
   linesEl.textContent = lines;
   levelEl.textContent = level;
+  comboEl.textContent = combo > 1 ? 'x' + combo + (b2b ? ' B2B' : '') : (b2b ? 'B2B' : '-');
+}
+
+function drawEffects() {
+  for (const e of effects) {
+    const t = e.life / e.max; // 1 → 0
+    if (e.kind === 'flash') {
+      ctx.fillStyle = `rgba(255,255,255,${0.7 * t})`;
+      for (const r of e.rows) ctx.fillRect(0, r * BLOCK, COLS * BLOCK, BLOCK);
+    }
+  }
+  // popups de texto apilados, el más reciente abajo
+  const texts = effects.filter(e => e.kind === 'text');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  texts.forEach((e, i) => {
+    const t = e.life / e.max;
+    const y = canvas.height / 2 + (i - texts.length + 1) * 30 - (1 - t) * 40;
+    ctx.globalAlpha = Math.min(1, t * 2);
+    ctx.font = `bold ${e.size}px monospace`;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.strokeText(e.text, canvas.width / 2, y);
+    ctx.fillStyle = e.color;
+    ctx.fillText(e.text, canvas.width / 2, y);
+  });
+  ctx.globalAlpha = 1;
 }
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
@@ -295,6 +423,11 @@ function drawGrid() {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  if (shakeLeft > 0) {
+    const p = shakePower * (shakeLeft / 300);
+    ctx.translate((Math.random() - 0.5) * 2 * p, (Math.random() - 0.5) * 2 * p);
+  }
   drawGrid();
 
   // board
@@ -323,6 +456,9 @@ function draw() {
     ctx.textBaseline = 'top';
     ctx.fillText(`❄ ${(freezeLeft / 1000).toFixed(1)}s`, 6, 6);
   }
+
+  drawEffects();
+  ctx.restore();
 }
 
 function drawNext() {
@@ -363,10 +499,14 @@ function loop(ts) {
   lastTime = ts;
   if (freezeLeft > 0) freezeLeft = Math.max(0, freezeLeft - dt);
   else dropAccum += dt;
+  if (shakeLeft > 0) shakeLeft = Math.max(0, shakeLeft - dt);
+  for (const e of effects) e.life -= dt;
+  effects = effects.filter(e => e.life > 0);
   if (dropAccum >= dropInterval) {
     dropAccum = 0;
     if (!collide(current.shape, current.x, current.y + 1)) {
       current.y++;
+      lastRotate = false;
     } else {
       lockPiece();
       if (gameOver) return;
@@ -387,6 +527,12 @@ function init() {
   powerupPending = false;
   powerupLines = 0;
   freezeLeft = 0;
+  combo = 0;
+  b2b = false;
+  lastRotate = false;
+  effects = [];
+  shakeLeft = 0;
+  shakePower = 0;
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
@@ -399,14 +545,16 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  getAudio(); // el navegador exige un gesto del usuario para iniciar el audio
+  if (e.code === 'KeyM') { muted = !muted; return; }
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
-      if (!collide(current.shape, current.x - 1, current.y)) current.x--;
+      if (!collide(current.shape, current.x - 1, current.y)) { current.x--; lastRotate = false; }
       break;
     case 'ArrowRight':
-      if (!collide(current.shape, current.x + 1, current.y)) current.x++;
+      if (!collide(current.shape, current.x + 1, current.y)) { current.x++; lastRotate = false; }
       break;
     case 'ArrowDown':
       softDrop();
