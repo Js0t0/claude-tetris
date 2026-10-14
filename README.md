@@ -36,6 +36,12 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - Tablero de **10 × 20** celdas.
 - Las **7 piezas estándar** (I, O, T, S, Z, J, L) con colores diferenciados.
 - **Piezas especiales**: pentominós **+**, **U** e **Y** que aparecen ocasionalmente, una pieza **3×3 hueca** como reto, y un bloque **1×1** de recompensa tras hacer un Tetris (4 líneas a la vez).
+- **Power-ups**: cada 5 líneas eliminadas la siguiente pieza es un bloque especial 1×1 aleatorio que actúa al aterrizar:
+  - 💣 **Bomba** — destruye el área 3×3 alrededor.
+  - ⚡ **Rayo** — limpia la fila o la columna completa (al azar).
+  - 🎨 **Tinte** — convierte en comodines (★) todos los bloques del color que tiene debajo (o el más abundante). Un comodín rellena un hueco de su fila: la fila se limpia si sus huecos ≤ sus comodines.
+  - ⬇ **Gravedad** — compacta los huecos del tablero.
+  - ❄ **Congelar** — detiene la caída automática durante 5 s (puedes seguir moviendo la pieza).
 - **Rotación** con _wall kicks_ básicos (pequeños desplazamientos para que la pieza pueda rotar pegada a la pared).
 - **Soft drop** (bajada acelerada) y **hard drop** (caída instantánea).
 - **Pieza fantasma** (_ghost piece_): muestra dónde aterrizará la pieza actual.
@@ -180,6 +186,8 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `COLORS`       | Paleta de colores por tipo de pieza      | 12 colores            |
 | `PENTOMINO_CHANCE` | Probabilidad de pentominó (+, U, Y)  | `0.10`                |
 | `HOLLOW_CHANCE` | Probabilidad de pieza hueca 3×3         | `0.04`                |
+| `POWERUP_LINES` | Líneas necesarias para un power-up    | `5`                   |
+| `FREEZE_MS`    | Duración de Congelar en ms               | `5000`                |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
 
