@@ -41,6 +41,12 @@ const FREEZE_MS = 5000;
 const PENTOMINOES = [8, 9, 10];
 const PENTOMINO_CHANCE = 0.10;
 const HOLLOW_CHANCE = 0.04;
+const ENERGY_LINES = 8;
+const PREVIEW_PIECES = 5;
+const HOLD_PIECES = 5;
+const SLOW_MS = 10000;
+const SLOW_FACTOR = 0.5;
+const QUEUE_SIZE = 5;
 
 const PIECES = [
   null,
@@ -79,12 +85,22 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeBtn = document.getElementById('theme-toggle');
 const comboEl = document.getElementById('combo');
+const holdCanvas = document.getElementById('hold-canvas');
+const holdCtx = holdCanvas.getContext('2d');
+const holdLeftEl = document.getElementById('hold-left');
+const energyBar = document.getElementById('energy-bar');
+const energyFill = document.getElementById('energy-fill');
+const energyHint = document.getElementById('energy-hint');
+const abilityMenu = document.getElementById('ability-menu');
+const abilityBtns = document.querySelectorAll('#ability-menu [data-ability]');
+const abilityCancel = document.getElementById('ability-cancel');
 
 let gridColor = '#22222e';
 let highlightColor = 'rgba(255,255,255,0.12)';
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending, powerupPending, powerupLines, freezeLeft;
+let board, current, queue, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending, powerupPending, powerupLines, freezeLeft;
 let combo, b2b, lastRotate, effects, shakeLeft, shakePower;
+let energy, choosing, previewLeft, slowLeft, holdLeft, held, holdUsed, lastPlacement;
 let muted = false;
 let audioCtx = null;
 
@@ -244,6 +260,9 @@ function clearLines(tspin, isPowerup) {
     powerupLines %= POWERUP_LINES;
     powerupPending = true;
   }
+  const wasFull = energy >= ENERGY_LINES;
+  energy = Math.min(ENERGY_LINES, energy + cleared);
+  if (!wasFull && energy >= ENERGY_LINES) addText('ENERGÍA LISTA [E]', '#7aa2f7', 20);
   lines += cleared;
   level = Math.floor(lines / 10) + 1;
   dropInterval = Math.max(100, 1000 - (level - 1) * 90);
@@ -328,9 +347,18 @@ function applyPowerup(type, x, y) {
 function lockPiece() {
   const isPowerup = POWERUPS.includes(current.type);
   const tspin = current.type === 3 && lastRotate && isTSpin();
+  lastPlacement = {
+    board: board.map(row => [...row]),
+    type: current.type,
+    queue: queue.map(p => p.type),
+    score, lines, level, combo, b2b, powerupLines, rewardPending, powerupPending, dropInterval, freezeLeft,
+  };
   if (isPowerup) applyPowerup(current.type, current.x, current.y);
   else merge();
   clearLines(tspin, isPowerup);
+  previewLeft = Math.max(0, previewLeft - 1);
+  holdLeft = Math.max(0, holdLeft - 1);
+  holdUsed = false;
   spawn();
 }
 
@@ -343,13 +371,104 @@ function spawn() {
     current = makePiece(SINGLE);
     rewardPending = false;
   } else {
-    current = next;
-    next = randomPiece();
+    current = queue.shift();
+    queue.push(randomPiece());
   }
   if (collide(current.shape, current.x, current.y)) {
     endGame();
   }
   drawNext();
+  drawHold();
+  updateHUD();
+}
+
+function holdPiece() {
+  if (holdLeft <= 0 || holdUsed) return;
+  if (held === null) {
+    held = current.type;
+    spawn();
+  } else {
+    const swapped = makePiece(held);
+    if (collide(swapped.shape, swapped.x, swapped.y)) return;
+    held = current.type;
+    current = swapped;
+    lastRotate = false;
+  }
+  holdUsed = true;
+  drawHold();
+  updateHUD();
+}
+
+function openAbilityMenu() {
+  choosing = true;
+  cancelAnimationFrame(animId);
+  abilityBtns[3].disabled = !lastPlacement; // deshacer
+  abilityMenu.classList.remove('hidden');
+}
+
+function closeAbilityMenu() {
+  choosing = false;
+  abilityMenu.classList.add('hidden');
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (!gameOver && !paused) {
+    lastTime = performance.now();
+    animId = requestAnimationFrame(loop);
+  }
+}
+
+function swapCurrent() {
+  for (let i = 0; i < 30; i++) {
+    const p = randomPiece();
+    if (p.type === current.type) continue;
+    const spawnX = p.x;
+    p.x = current.x;
+    p.y = current.y;
+    if (collide(p.shape, p.x, p.y)) {
+      p.x = spawnX;
+      p.y = 0;
+      if (collide(p.shape, p.x, p.y)) continue;
+    }
+    current = p;
+    lastRotate = false;
+    return true;
+  }
+  return false;
+}
+
+function undoPlacement() {
+  const s = lastPlacement;
+  if (!s) return false;
+  board = s.board;
+  ({ score, lines, level, combo, b2b, powerupLines, rewardPending, powerupPending, dropInterval, freezeLeft } = s);
+  queue = s.queue.map(makePiece);
+  current = makePiece(s.type);
+  lastPlacement = null;
+  lastRotate = false;
+  dropAccum = 0;
+  drawNext();
+  return true;
+}
+
+function useAbility(n) {
+  if (!choosing) return;
+  let ok = true;
+  switch (n) {
+    case 1: previewLeft = PREVIEW_PIECES; break;
+    case 2: ok = swapCurrent(); break;
+    case 3: slowLeft = SLOW_MS; break;
+    case 4: ok = undoPlacement(); break;
+    case 5: holdLeft = HOLD_PIECES; break;
+  }
+  if (ok) {
+    energy = 0;
+    addText(['', 'VISTA x5', 'CAMBIO', 'RALENTIZAR', 'DESHACER', 'HOLD'][n], '#7aa2f7');
+  } else {
+    addText('NO SE PUEDE', '#e57373');
+  }
+  drawNext();
+  drawHold();
+  updateHUD();
+  closeAbilityMenu();
 }
 
 function updateHUD() {
@@ -357,6 +476,11 @@ function updateHUD() {
   linesEl.textContent = lines;
   levelEl.textContent = level;
   comboEl.textContent = combo > 1 ? 'x' + combo + (b2b ? ' B2B' : '') : (b2b ? 'B2B' : '-');
+  const full = energy >= ENERGY_LINES;
+  energyFill.style.width = (energy / ENERGY_LINES * 100) + '%';
+  energyBar.classList.toggle('full', full);
+  energyHint.textContent = full ? 'PULSA E' : energy + '/' + ENERGY_LINES;
+  holdLeftEl.textContent = holdLeft > 0 ? holdLeft + ' piezas · C' : '-';
 }
 
 function drawEffects() {
@@ -457,19 +581,47 @@ function draw() {
     ctx.fillText(`❄ ${(freezeLeft / 1000).toFixed(1)}s`, 6, 6);
   }
 
+  if (slowLeft > 0) {
+    ctx.fillStyle = 'rgba(186,104,200,0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ba68c8';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`🐢 ${(slowLeft / 1000).toFixed(1)}s`, 6, freezeLeft > 0 ? 28 : 6);
+  }
+
   drawEffects();
   ctx.restore();
 }
 
-function drawNext() {
-  const NB = 30;
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  const shape = next.shape;
+// dibuja una forma centrada en una celda de 4×4 bloques de tamaño `size`
+function drawShapeCentered(context, shape, size, alpha) {
   const offX = Math.floor((4 - shape[0].length) / 2);
   const offY = Math.floor((4 - shape.length) / 2);
   for (let r = 0; r < shape.length; r++)
     for (let c = 0; c < shape[r].length; c++)
-      drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
+      drawBlock(context, offX + c, offY + r, shape[r][c], size, alpha);
+}
+
+function drawNext() {
+  const height = previewLeft > 0 ? 120 + (QUEUE_SIZE - 1) * 60 : 120;
+  if (nextCanvas.height !== height) nextCanvas.height = height;
+  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  drawShapeCentered(nextCtx, queue[0].shape, 30);
+  if (previewLeft <= 0) return;
+  for (let i = 1; i < QUEUE_SIZE; i++) {
+    nextCtx.save();
+    nextCtx.translate(30, 120 + (i - 1) * 60);
+    drawShapeCentered(nextCtx, queue[i].shape, 15);
+    nextCtx.restore();
+  }
+}
+
+function drawHold() {
+  holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+  if (held === null) return;
+  drawShapeCentered(holdCtx, PIECES[held], 30, holdLeft > 0 && !holdUsed ? 1 : 0.35);
 }
 
 function endGame() {
@@ -498,7 +650,8 @@ function loop(ts) {
   const dt = ts - lastTime;
   lastTime = ts;
   if (freezeLeft > 0) freezeLeft = Math.max(0, freezeLeft - dt);
-  else dropAccum += dt;
+  else dropAccum += slowLeft > 0 ? dt * SLOW_FACTOR : dt;
+  if (slowLeft > 0) slowLeft = Math.max(0, slowLeft - dt);
   if (shakeLeft > 0) shakeLeft = Math.max(0, shakeLeft - dt);
   for (const e of effects) e.life -= dt;
   effects = effects.filter(e => e.life > 0);
@@ -533,13 +686,22 @@ function init() {
   effects = [];
   shakeLeft = 0;
   shakePower = 0;
+  energy = 0;
+  choosing = false;
+  previewLeft = 0;
+  slowLeft = 0;
+  holdLeft = 0;
+  held = null;
+  holdUsed = false;
+  lastPlacement = null;
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
-  next = randomPiece();
+  queue = Array.from({ length: QUEUE_SIZE }, randomPiece);
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  abilityMenu.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
@@ -547,9 +709,20 @@ function init() {
 document.addEventListener('keydown', e => {
   getAudio(); // el navegador exige un gesto del usuario para iniciar el audio
   if (e.code === 'KeyM') { muted = !muted; return; }
+  if (choosing) {
+    if (e.code === 'Escape') closeAbilityMenu();
+    else if (/^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5));
+    return;
+  }
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
+    case 'KeyE':
+      if (energy >= ENERGY_LINES) openAbilityMenu();
+      break;
+    case 'KeyC':
+      holdPiece();
+      break;
     case 'ArrowLeft':
       if (!collide(current.shape, current.x - 1, current.y)) { current.x--; lastRotate = false; }
       break;
@@ -572,6 +745,8 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+abilityBtns.forEach(btn => btn.addEventListener('click', () => useAbility(+btn.dataset.ability)));
+abilityCancel.addEventListener('click', closeAbilityMenu);
 
 function applyTheme(theme) {
   const light = theme === 'light';
@@ -582,9 +757,10 @@ function applyTheme(theme) {
   gridColor = styles.getPropertyValue('--grid').trim();
   highlightColor = styles.getPropertyValue('--highlight').trim();
   // redibujar para reflejar el cambio en pausa o game over
-  if (current && next) {
+  if (current && queue) {
     draw();
     drawNext();
+    drawHold();
   }
 }
 

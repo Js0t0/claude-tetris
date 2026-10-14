@@ -42,6 +42,12 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
   - 🎨 **Tinte** — convierte en comodines (★) todos los bloques del color que tiene debajo (o el más abundante). Un comodín rellena un hueco de su fila: la fila se limpia si sus huecos ≤ sus comodines.
   - ⬇ **Gravedad** — compacta los huecos del tablero.
   - ❄ **Congelar** — detiene la caída automática durante 5 s (puedes seguir moviendo la pieza).
+- **Habilidades cargables**: una barra de **energía** se llena con las líneas eliminadas (8 líneas). Cuando está llena, pulsa `E` (el juego se pausa) y elige una habilidad con `1`–`5` o el ratón (`Esc` cancela sin gastar energía); la barra se vacía:
+  - **1 · Ver 5 piezas** — el panel NEXT muestra las próximas 5 piezas durante 5 colocaciones.
+  - **2 · Cambiar pieza** — sustituye la pieza actual por otra al azar del pool.
+  - **3 · Ralentizar** — la caída automática va a la mitad de velocidad durante 10 s.
+  - **4 · Deshacer** — revierte la última colocación (tablero, puntuación, líneas y cola); no se encadena.
+  - **5 · Reservar (hold)** — activa `C` durante las próximas 5 piezas: guarda la pieza actual o la intercambia con la guardada (una vez por pieza). La pieza guardada se conserva en el panel HOLD.
 - **Rotación** con _wall kicks_ básicos (pequeños desplazamientos para que la pieza pueda rotar pegada a la pared).
 - **Soft drop** (bajada acelerada) y **hard drop** (caída instantánea).
 - **Pieza fantasma** (_ghost piece_): muestra dónde aterrizará la pieza actual.
@@ -97,6 +103,8 @@ Después abre `http://localhost:8000` en el navegador.
 | `↑` o `X` | Rotar la pieza en sentido horario |
 | `↓`       | Soft drop (bajar más rápido)      |
 | `Espacio` | Hard drop (caída instantánea)     |
+| `E`       | Abrir menú de habilidades (barra llena) |
+| `C`       | Hold (tras activar la habilidad Reservar) |
 | `P`       | Pausar / reanudar                 |
 | `M`       | Silenciar / activar sonido        |
 
@@ -195,6 +203,9 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `HOLLOW_CHANCE` | Probabilidad de pieza hueca 3×3         | `0.04`                |
 | `POWERUP_LINES` | Líneas necesarias para un power-up    | `5`                   |
 | `FREEZE_MS`    | Duración de Congelar en ms               | `5000`                |
+| `ENERGY_LINES` | Líneas para llenar la barra de energía   | `8`                   |
+| `PREVIEW_PIECES` / `HOLD_PIECES` | Piezas que duran Ver 5 / Hold | `5`             |
+| `SLOW_MS` / `SLOW_FACTOR` | Duración y factor de Ralentizar | `10000` / `0.5`     |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
 | `TSPIN_SCORES` | Puntos de T-spin con 0, 1, 2 o 3 líneas  | `[400,800,1200,1600]` |
 | `PERFECT_SCORES` | Bonus de Perfect Clear por nº de líneas | `[0,800,1200,1800,2000]` |
