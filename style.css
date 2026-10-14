@@ -291,7 +291,8 @@ kbd {
   color: var(--accent);
 }
 
-#restart-btn {
+#restart-btn,
+#play-btn {
   margin-top: 8px;
   background: var(--accent);
   color: var(--on-accent);
@@ -305,7 +306,8 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover {
+#restart-btn:hover,
+#play-btn:hover {
   background: var(--accent-hover);
 }
 
@@ -339,6 +341,89 @@ kbd {
 .ability-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ---- Récords ---- */
+.records {
+  width: 240px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.records-title {
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.records ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.records li {
+  display: flex;
+  gap: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.records li .rec-pos { color: var(--muted); width: 14px; }
+.records li .rec-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.records li .rec-score { font-weight: 700; }
+.records li.empty { color: var(--muted); }
+
+.records li.highlight {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 800;
+}
+
+.records li.highlight .rec-pos { color: var(--on-accent); }
+
+.records-best {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.name-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.name-entry.hidden {
+  display: none;
+}
+
+.name-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.name-row input {
+  width: 120px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--board-bg);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.name-row .ability-btn {
+  width: auto;
+}
+
+#play-btn kbd {
+  margin-left: 6px;
 }
 
 .ability-btn.secondary {
