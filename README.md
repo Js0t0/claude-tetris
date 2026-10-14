@@ -59,7 +59,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
   - **Perfect Clear**: dejar el tablero vacío suma 800 / 1200 / 1800 / 2000 × nivel.
   - Fórmula: `base × (B2B ? 1.5 : 1) × combo × nivel` (+ Perfect Clear).
   - Efectos visuales (destello, textos, sacudida) y sonido (Web Audio); `M` silencia.
-- **Niveles** que aumentan cada 10 líneas y aceleran la caída.
+- **Niveles** que aumentan cada 10 líneas (a partir del nivel inicial elegido en el menú de pausa) y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
 
 ---
@@ -105,8 +105,10 @@ Después abre `http://localhost:8000` en el navegador.
 | `Espacio` | Hard drop (caída instantánea)     |
 | `E`       | Abrir menú de habilidades (barra llena) |
 | `C` / `Shift` | Hold (reservar / intercambiar pieza, una vez por pieza) |
-| `P`       | Pausar / reanudar                 |
+| `P` / `Esc` | Pausar / reanudar (abre el menú de pausa) |
 | `M`       | Silenciar / activar sonido        |
+
+Al pausar aparece un **menú de pausa** con: **Reanudar**, **Reiniciar** (nueva partida sin recargar), **Ver controles** y un selector de **Nivel inicial** (1–15) que se aplica en la próxima partida. Mientras el menú está abierto, las teclas de juego quedan bloqueadas (solo `P`/`Esc` reanudan y `M` sigue silenciando). (`Esc` dentro del menú de habilidades solo cancela la elección.)
 
 Además, el botón **Modo claro / Modo oscuro** (arriba a la derecha) alterna el tema. El juego inicia siempre en modo oscuro.
 
@@ -122,7 +124,7 @@ Define la estructura visual:
 
 - Un `<canvas id="board">` de **300 × 600** píxeles donde se renderiza el tablero.
 - Un panel lateral con `SCORE`, `LINES`, `LEVEL`, vista de la siguiente pieza y la lista de controles.
-- Un overlay para los estados **PAUSA** y **GAME OVER**.
+- Un overlay para **GAME OVER**, un menú de **PAUSA** y el menú de habilidades.
 
 ### 2. `style.css`
 
@@ -140,7 +142,7 @@ Contiene toda la lógica del juego. A grandes rasgos:
 - **Game loop** (`loop`): basado en `requestAnimationFrame`, acumula el tiempo transcurrido y baja la pieza una fila cuando se supera `dropInterval`.
 - **Limpieza de líneas** (`clearLines`): recorre el tablero de abajo hacia arriba; cada fila completa se elimina y se inserta una vacía en la cima.
 - **Puntuación**: usa la tabla clásica `[0, 100, 300, 500, 800]` multiplicada por el nivel actual; el hard drop suma 2 puntos por celda recorrida y el soft drop 1 punto por fila.
-- **Nivel y velocidad**: el nivel sube cada 10 líneas; la velocidad de caída se calcula como `max(100, 1000 − (level − 1) × 90)` milisegundos.
+- **Nivel y velocidad**: el nivel es `nivelInicial + floor(líneas / 10)`; la velocidad de caída se calcula como `max(100, 1000 − (level − 1) × 90)` milisegundos.
 - **Ghost piece** (`ghostY`): proyecta la posición final de la pieza actual hacia abajo y la dibuja con `globalAlpha = 0.2`.
 
 ### Flujo del juego
@@ -210,7 +212,8 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `TSPIN_SCORES` | Puntos de T-spin con 0, 1, 2 o 3 líneas  | `[400,800,1200,1600]` |
 | `PERFECT_SCORES` | Bonus de Perfect Clear por nº de líneas | `[0,800,1200,1800,2000]` |
 | `B2B_MULT`     | Multiplicador Back-to-Back               | `1.5`                 |
-| `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
+| `dropInterval` | Velocidad inicial de caída en ms (con nivel inicial 1) | `1000`          |
+| `startLevel`   | Nivel inicial (menú de pausa, 1–15)      | `1`                   |
 
 Los colores de la interfaz son variables CSS (`--bg`, `--accent`, `--grid`, …) definidas en `:root` de `style.css`; el tema claro las redefine en `:root[data-theme="light"]`.
 

@@ -79,6 +79,10 @@ const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
 const overlay = document.getElementById('overlay');
+const pauseMenu = document.getElementById('pause-menu');
+const pauseControls = document.getElementById('pause-controls');
+const controlsBtn = document.getElementById('pause-controls-btn');
+const levelSelect = document.getElementById('start-level');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
@@ -97,6 +101,7 @@ const abilityCancel = document.getElementById('ability-cancel');
 let gridColor = '#22222e';
 let highlightColor = 'rgba(255,255,255,0.12)';
 
+let startLevel = 1; // nivel con el que empieza la próxima partida
 let board, current, queue, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending, powerupPending, powerupLines, freezeLeft;
 let combo, b2b, lastRotate, effects, shakeLeft, shakePower;
 let energy, choosing, previewLeft, slowLeft, held, holdUsed, lastPlacement;
@@ -263,7 +268,7 @@ function clearLines(tspin, isPowerup) {
   energy = Math.min(ENERGY_LINES, energy + cleared);
   if (!wasFull && energy >= ENERGY_LINES) addText('ENERGÍA LISTA [E]', '#7aa2f7', 20);
   lines += cleared;
-  level = Math.floor(lines / 10) + 1;
+  level = startLevel + Math.floor(lines / 10);
   dropInterval = Math.max(100, 1000 - (level - 1) * 90);
 
   const perfect = board.every(row => row.every(v => !v));
@@ -637,13 +642,16 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    pauseMenu.classList.add('hidden');
+    pauseControls.classList.add('hidden');
+    controlsBtn.textContent = 'Ver controles';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     lastTime = performance.now();
-    loop(lastTime);
+    dropAccum = 0;
+    animId = requestAnimationFrame(loop);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    pauseMenu.classList.remove('hidden');
   }
 }
 
@@ -674,7 +682,7 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   paused = false;
   gameOver = false;
   rewardPending = false;
@@ -694,13 +702,16 @@ function init() {
   held = null;
   holdUsed = false;
   lastPlacement = null;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   queue = Array.from({ length: QUEUE_SIZE }, randomPiece);
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  pauseMenu.classList.add('hidden');
+  pauseControls.classList.add('hidden');
+  controlsBtn.textContent = 'Ver controles';
   abilityMenu.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
@@ -714,7 +725,7 @@ document.addEventListener('keydown', e => {
     else if (/^Digit[1-4]$/.test(e.code)) useAbility(+e.code.slice(5));
     return;
   }
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || (e.code === 'Escape' && !gameOver)) { if (!e.repeat) togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'KeyE':
@@ -747,6 +758,19 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+document.getElementById('pause-resume').addEventListener('click', togglePause);
+document.getElementById('pause-restart').addEventListener('click', () => {
+  init();
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+});
+controlsBtn.addEventListener('click', () => {
+  const hidden = pauseControls.classList.toggle('hidden');
+  controlsBtn.textContent = hidden ? 'Ver controles' : 'Ocultar controles';
+  controlsBtn.blur();
+});
+for (let i = 1; i <= 15; i++) levelSelect.add(new Option(i, i));
+levelSelect.value = startLevel;
+levelSelect.addEventListener('change', () => { startLevel = +levelSelect.value; });
 abilityBtns.forEach(btn => btn.addEventListener('click', () => useAbility(+btn.dataset.ability)));
 abilityCancel.addEventListener('click', closeAbilityMenu);
 
