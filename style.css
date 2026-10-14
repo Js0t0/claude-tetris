@@ -56,10 +56,15 @@ body {
   user-select: none;
 }
 
-.theme-toggle {
+.top-controls {
   position: absolute;
   top: 16px;
   right: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.theme-toggle {
   background: var(--board-bg);
   color: var(--text);
   border: 1px solid var(--border);
@@ -72,6 +77,13 @@ body {
 
 .theme-toggle:hover {
   border-color: var(--accent);
+}
+
+/* Neon: tableros y vistas previas siempre sobre negro */
+:root[data-skin="neon"] #board,
+:root[data-skin="neon"] #next-canvas,
+:root[data-skin="neon"] #hold-canvas {
+  background: #000;
 }
 
 .title {

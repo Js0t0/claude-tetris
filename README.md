@@ -52,6 +52,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Soft drop** (bajada acelerada) y **hard drop** (caída instantánea).
 - **Pieza fantasma** (_ghost piece_): muestra dónde aterrizará la pieza actual.
 - **Vista previa** de la siguiente pieza.
+- **Skins**: Retro, Neon (brillo con `shadowBlur` sobre fondo negro), Pastel (bordes redondeados) y Pixel art (textura sobre cada bloque). Se elige con el selector de arriba a la derecha, se aplica sin recargar y se guarda en `localStorage` (`tetris-skin`).
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
 - **Combos y multiplicadores**: limpiar líneas en piezas consecutivas multiplica la puntuación (x2, x3, x4…); una pieza que no limpia líneas reinicia el combo (los power-ups no lo rompen).
   - **T-spin**: girar una T como último movimiento con ≥3 esquinas ocupadas (400 / 800 / 1200 / 1600 según líneas).
@@ -108,7 +109,7 @@ Después abre `http://localhost:8000` en el navegador.
 | `P`       | Pausar / reanudar                 |
 | `M`       | Silenciar / activar sonido        |
 
-Además, el botón **Modo claro / Modo oscuro** (arriba a la derecha) alterna el tema. El juego inicia siempre en modo oscuro.
+Además, el botón **Modo claro / Modo oscuro** (arriba a la derecha) alterna el tema. El juego inicia siempre en modo oscuro. El selector de **skin** (junto al botón de tema) cambia la apariencia de los bloques y funciona con ambos temas.
 
 ---
 
@@ -213,6 +214,8 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
 
 Los colores de la interfaz son variables CSS (`--bg`, `--accent`, `--grid`, …) definidas en `:root` de `style.css`; el tema claro las redefine en `:root[data-theme="light"]`.
+
+Los skins viven en el objeto `SKINS` de `game.js`: cada uno define `colors` (mismos índices 1–18 que `COLORS`), `grid`/`highlight` (`null` = usar los del tema) y una función `drawCell(ctx, px, py, size, color)`. Para añadir uno, crea la entrada en `SKINS` y una `<option>` en `#skin-select` de `index.html`.
 
 > Si cambias `COLS`, `ROWS` o `BLOCK`, recuerda ajustar también `width` y `height` del `<canvas id="board">` en `index.html` para que coincida (`COLS × BLOCK` × `ROWS × BLOCK`).
 
