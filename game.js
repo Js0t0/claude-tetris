@@ -255,7 +255,7 @@ function clearLines(tspin, isPowerup) {
   }
 
   combo++;
-  if (combo > maxCombo) maxCombo = combo;
+  if (combo > 1 && combo > maxCombo) maxCombo = combo;
   const difficult = cleared === 4 || tspin;
   const b2bApplies = difficult && b2b;
   b2b = difficult;
@@ -793,6 +793,8 @@ function loop(ts) {
 }
 
 function init() {
+  // si se reinicia sin guardar, se guarda con el nombre escrito (o el de por defecto)
+  if (pendingRecord) saveRecord(nameInput.value.trim().slice(0, 12));
   board = createBoard();
   score = 0;
   lines = 0;
@@ -806,6 +808,7 @@ function init() {
   combo = 0;
   maxCombo = 0;
   pendingRecord = false;
+  overlayRecords.textContent = '';
   nameEntry.classList.add('hidden');
   b2b = false;
   lastRotate = false;
@@ -835,7 +838,7 @@ document.addEventListener('keydown', e => {
   // no jugar mientras se escribe en un campo de texto
   if (e.target instanceof HTMLInputElement) return;
   if (!started) {
-    if (e.code === 'Enter') { e.preventDefault(); startGame(); }
+    if (e.code === 'Enter' && !(e.target instanceof HTMLButtonElement)) { e.preventDefault(); startGame(); }
     return;
   }
   getAudio(); // el navegador exige un gesto del usuario para iniciar el audio
