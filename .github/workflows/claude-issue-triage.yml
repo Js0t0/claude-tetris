@@ -85,7 +85,12 @@ jobs:
             - Opcionales: accessibility, good first issue
 
             ## Salida 2: `.triage/diagnosis.md`
-            Diagnóstico en español, en Markdown, con estas secciones (##):
+            Diagnóstico en español. Este archivo se publicará tal cual como comentario en
+            GitHub, así que DEBE estar en formato GitHub Flavored Markdown (GFM) válido que
+            GitHub renderice correctamente: encabezados `##`, listas con `-` o `1.`,
+            `código` en línea y bloques de código con triple acento grave y lenguaje
+            (```js), tablas GFM si las usas, y listas de tareas `- [ ]` para los criterios
+            de aceptación. No uses HTML ni texto plano sin formato. Secciones (##):
             1. Resumen
             2. Tipo y prioridad (justificación breve)
             3. Archivos y funciones probablemente implicados (con referencias `archivo:línea`)
