@@ -13,74 +13,80 @@
 
   <div class="wrapper">
     <div class="game-container">
-      <canvas id="board" width="300" height="600"></canvas>
-
-      <aside class="panel">
-        <div class="panel-section">
-          <span class="label">SCORE</span>
-          <span class="value" id="score">0</span>
-        </div>
-        <div class="panel-section">
-          <span class="label">LINES</span>
-          <span class="value" id="lines">0</span>
-        </div>
-        <div class="panel-section">
-          <span class="label">LEVEL</span>
-          <span class="value" id="level">1</span>
-        </div>
-        <div class="panel-section">
-          <span class="label">COMBO</span>
-          <span class="value" id="combo">-</span>
-        </div>
-
-        <div class="panel-section">
-          <span class="label">ENERGY <span id="energy-hint" class="hint"></span></span>
-          <div class="energy-bar" id="energy-bar"><div id="energy-fill"></div></div>
-        </div>
-
-        <div class="panel-section">
-          <span class="label">NEXT</span>
-          <canvas id="next-canvas" width="120" height="120"></canvas>
-        </div>
-
-        <div class="panel-section">
+      <aside class="panel panel-left">
+        <div class="card">
           <span class="label">HOLD <span id="hold-hint" class="hint">C / Shift</span></span>
           <canvas id="hold-canvas" width="120" height="120"></canvas>
         </div>
 
-        <div class="panel-section controls">
+        <div class="card">
+          <span class="label">NEXT</span>
+          <canvas id="next-canvas" width="120" height="120"></canvas>
+        </div>
+
+        <div class="card">
+          <span class="label">ENERGY <span id="energy-hint" class="hint"></span></span>
+          <div class="energy-bar" id="energy-bar"><div id="energy-fill"></div></div>
+        </div>
+      </aside>
+
+      <div class="board-wrap">
+        <canvas id="board" width="300" height="600"></canvas>
+
+        <div id="overlay" class="overlay hidden">
+          <div class="overlay-box">
+            <p id="overlay-title">GAME OVER</p>
+            <p id="overlay-score"></p>
+            <button id="restart-btn">Reiniciar</button>
+          </div>
+        </div>
+
+        <div id="ability-menu" class="overlay hidden">
+          <div class="overlay-box">
+            <p class="menu-title">HABILIDAD</p>
+            <button class="ability-btn" data-ability="1"><kbd>1</kbd> Ver 5 piezas</button>
+            <button class="ability-btn" data-ability="2"><kbd>2</kbd> Cambiar pieza</button>
+            <button class="ability-btn" data-ability="3"><kbd>3</kbd> Ralentizar 10s</button>
+            <button class="ability-btn" data-ability="4"><kbd>4</kbd> Deshacer</button>
+            <button id="ability-cancel" class="ability-btn secondary"><kbd>Esc</kbd> Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel panel-right">
+        <div class="stats">
+          <div class="card stat">
+            <span class="label">SCORE</span>
+            <span class="value" id="score">0</span>
+          </div>
+          <div class="card stat">
+            <span class="label">LINES</span>
+            <span class="value" id="lines">0</span>
+          </div>
+          <div class="card stat">
+            <span class="label">LEVEL</span>
+            <span class="value" id="level">1</span>
+          </div>
+          <div class="card stat">
+            <span class="label">COMBO</span>
+            <span class="value" id="combo">-</span>
+          </div>
+        </div>
+
+        <div class="card controls">
           <span class="label">CONTROLS</span>
           <ul>
-            <li><kbd>←</kbd><kbd>→</kbd> mover</li>
-            <li><kbd>↑</kbd> rotar</li>
-            <li><kbd>↓</kbd> bajar</li>
-            <li><kbd>Space</kbd> caída</li>
-            <li><kbd>E</kbd> habilidad</li>
-            <li><kbd>C</kbd><kbd>Shift</kbd> hold</li>
-            <li><kbd>P</kbd> pausa</li>
-            <li><kbd>M</kbd> sonido</li>
+            <li><span class="keys"><kbd>←</kbd><kbd>→</kbd></span> mover</li>
+            <li><span class="keys"><kbd>↑</kbd></span> rotar</li>
+            <li><span class="keys"><kbd>↓</kbd></span> bajar</li>
+            <li><span class="keys"><kbd>Space</kbd></span> caída</li>
+            <li><span class="keys"><kbd>E</kbd></span> habilidad</li>
+            <li><span class="keys"><kbd>C</kbd><kbd>Shift</kbd></span> hold</li>
+            <li><span class="keys"><kbd>P</kbd></span> pausa</li>
+            <li><span class="keys"><kbd>M</kbd></span> sonido</li>
           </ul>
         </div>
       </aside>
-    </div>
-
-    <div id="overlay" class="overlay hidden">
-      <div class="overlay-box">
-        <p id="overlay-title">GAME OVER</p>
-        <p id="overlay-score"></p>
-        <button id="restart-btn">Reiniciar</button>
-      </div>
-    </div>
-
-    <div id="ability-menu" class="overlay hidden">
-      <div class="overlay-box">
-        <p class="menu-title">HABILIDAD</p>
-        <button class="ability-btn" data-ability="1"><kbd>1</kbd> Ver 5 piezas</button>
-        <button class="ability-btn" data-ability="2"><kbd>2</kbd> Cambiar pieza</button>
-        <button class="ability-btn" data-ability="3"><kbd>3</kbd> Ralentizar 10s</button>
-        <button class="ability-btn" data-ability="4"><kbd>4</kbd> Deshacer</button>
-        <button id="ability-cancel" class="ability-btn secondary"><kbd>Esc</kbd> Cancelar</button>
-      </div>
     </div>
   </div>
 
