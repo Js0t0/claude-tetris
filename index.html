@@ -41,6 +41,29 @@
           </div>
         </div>
 
+        <div id="pause-menu" class="overlay hidden">
+          <div class="overlay-box">
+            <p class="menu-title">PAUSA</p>
+            <button id="pause-resume" class="ability-btn">Reanudar</button>
+            <button id="pause-restart" class="ability-btn">Reiniciar</button>
+            <button id="pause-controls-btn" class="ability-btn secondary">Ver controles</button>
+            <ul id="pause-controls" class="pause-controls hidden">
+              <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+              <li><kbd>↑</kbd><kbd>X</kbd> rotar</li>
+              <li><kbd>↓</kbd> bajar</li>
+              <li><kbd>Space</kbd> caída</li>
+              <li><kbd>E</kbd> habilidad</li>
+              <li><kbd>C</kbd><kbd>Shift</kbd> hold</li>
+              <li><kbd>P</kbd><kbd>Esc</kbd> pausa</li>
+              <li><kbd>M</kbd> sonido</li>
+            </ul>
+            <label class="level-pick">Nivel inicial
+              <select id="start-level"></select>
+            </label>
+            <span class="hint">Se aplica en la próxima partida</span>
+          </div>
+        </div>
+
         <div id="ability-menu" class="overlay hidden">
           <div class="overlay-box">
             <p class="menu-title">HABILIDAD</p>
