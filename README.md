@@ -86,6 +86,8 @@ Después abre `http://localhost:8000` en el navegador.
 | `Espacio` | Hard drop (caída instantánea)     |
 | `P`       | Pausar / reanudar                 |
 
+Además, el botón **Modo claro / Modo oscuro** (arriba a la derecha) alterna el tema. El juego inicia siempre en modo oscuro.
+
 ---
 
 ## Cómo funciona
@@ -176,6 +178,8 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `COLORS`       | Paleta de colores por tipo de pieza      | 7 colores             |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
+
+Los colores de la interfaz son variables CSS (`--bg`, `--accent`, `--grid`, …) definidas en `:root` de `style.css`; el tema claro las redefine en `:root[data-theme="light"]`.
 
 > Si cambias `COLS`, `ROWS` o `BLOCK`, recuerda ajustar también `width` y `height` del `<canvas id="board">` en `index.html` para que coincida (`COLS × BLOCK` × `ROWS × BLOCK`).
 
