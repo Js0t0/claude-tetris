@@ -61,6 +61,8 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
   - Efectos visuales (destello, textos, sacudida) y sonido (Web Audio); `M` silencia.
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
+- **Pantalla de inicio**: el juego no arranca solo; pulsa **Jugar** o `Enter`.
+- **Tabla de récords local**: el top 5 de puntuaciones se guarda en `localStorage` (clave `tetris-records`) con el nombre del jugador. Si tu puntuación entra en el top, al terminar la partida aparece un campo de nombre (máx. 12 caracteres; `Enter` o **Guardar**) y tu fila se resalta. La tabla se muestra en la pantalla de inicio y en el Game Over, junto con el **mejor combo** y las **máximas líneas** de todos los tiempos (clave `tetris-stats`). El botón **Borrar récords** (pantalla de inicio, con confirmación) lo reinicia todo. Si el navegador no permite `localStorage`, el juego funciona igual pero sin persistencia.
 
 ---
 
