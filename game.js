@@ -43,7 +43,6 @@ const PENTOMINO_CHANCE = 0.10;
 const HOLLOW_CHANCE = 0.04;
 const ENERGY_LINES = 8;
 const PREVIEW_PIECES = 5;
-const HOLD_PIECES = 5;
 const SLOW_MS = 10000;
 const SLOW_FACTOR = 0.5;
 const QUEUE_SIZE = 5;
@@ -87,7 +86,7 @@ const themeBtn = document.getElementById('theme-toggle');
 const comboEl = document.getElementById('combo');
 const holdCanvas = document.getElementById('hold-canvas');
 const holdCtx = holdCanvas.getContext('2d');
-const holdLeftEl = document.getElementById('hold-left');
+const holdHintEl = document.getElementById('hold-hint');
 const energyBar = document.getElementById('energy-bar');
 const energyFill = document.getElementById('energy-fill');
 const energyHint = document.getElementById('energy-hint');
@@ -100,7 +99,7 @@ let highlightColor = 'rgba(255,255,255,0.12)';
 
 let board, current, queue, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending, powerupPending, powerupLines, freezeLeft;
 let combo, b2b, lastRotate, effects, shakeLeft, shakePower;
-let energy, choosing, previewLeft, slowLeft, holdLeft, held, holdUsed, lastPlacement;
+let energy, choosing, previewLeft, slowLeft, held, holdUsed, lastPlacement;
 let muted = false;
 let audioCtx = null;
 
@@ -351,13 +350,13 @@ function lockPiece() {
     board: board.map(row => [...row]),
     type: current.type,
     queue: queue.map(p => p.type),
+    held,
     score, lines, level, combo, b2b, powerupLines, rewardPending, powerupPending, dropInterval, freezeLeft,
   };
   if (isPowerup) applyPowerup(current.type, current.x, current.y);
   else merge();
   clearLines(tspin, isPowerup);
   previewLeft = Math.max(0, previewLeft - 1);
-  holdLeft = Math.max(0, holdLeft - 1);
   holdUsed = false;
   spawn();
 }
@@ -383,7 +382,7 @@ function spawn() {
 }
 
 function holdPiece() {
-  if (holdLeft <= 0 || holdUsed) return;
+  if (holdUsed) return;
   if (held === null) {
     held = current.type;
     spawn();
@@ -439,13 +438,15 @@ function undoPlacement() {
   const s = lastPlacement;
   if (!s) return false;
   board = s.board;
-  ({ score, lines, level, combo, b2b, powerupLines, rewardPending, powerupPending, dropInterval, freezeLeft } = s);
+  ({ held, score, lines, level, combo, b2b, powerupLines, rewardPending, powerupPending, dropInterval, freezeLeft } = s);
   queue = s.queue.map(makePiece);
   current = makePiece(s.type);
   lastPlacement = null;
   lastRotate = false;
+  holdUsed = false;
   dropAccum = 0;
   drawNext();
+  drawHold();
   return true;
 }
 
@@ -457,11 +458,10 @@ function useAbility(n) {
     case 2: ok = swapCurrent(); break;
     case 3: slowLeft = SLOW_MS; break;
     case 4: ok = undoPlacement(); break;
-    case 5: holdLeft = HOLD_PIECES; break;
   }
   if (ok) {
     energy = 0;
-    addText(['', 'VISTA x5', 'CAMBIO', 'RALENTIZAR', 'DESHACER', 'HOLD'][n], '#7aa2f7');
+    addText(['', 'VISTA x5', 'CAMBIO', 'RALENTIZAR', 'DESHACER'][n], '#7aa2f7');
   } else {
     addText('NO SE PUEDE', '#e57373');
   }
@@ -480,7 +480,8 @@ function updateHUD() {
   energyFill.style.width = (energy / ENERGY_LINES * 100) + '%';
   energyBar.classList.toggle('full', full);
   energyHint.textContent = full ? 'PULSA E' : energy + '/' + ENERGY_LINES;
-  holdLeftEl.textContent = holdLeft > 0 ? holdLeft + ' piezas · C' : '-';
+  holdHintEl.textContent = holdUsed ? 'BLOQUEADO' : 'C / Shift';
+  holdCanvas.classList.toggle('locked', holdUsed);
 }
 
 function drawEffects() {
@@ -621,7 +622,7 @@ function drawNext() {
 function drawHold() {
   holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
   if (held === null) return;
-  drawShapeCentered(holdCtx, PIECES[held], 30, holdLeft > 0 && !holdUsed ? 1 : 0.35);
+  drawShapeCentered(holdCtx, PIECES[held], 30);
 }
 
 function endGame() {
@@ -690,7 +691,6 @@ function init() {
   choosing = false;
   previewLeft = 0;
   slowLeft = 0;
-  holdLeft = 0;
   held = null;
   holdUsed = false;
   lastPlacement = null;
@@ -711,7 +711,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyM') { muted = !muted; return; }
   if (choosing) {
     if (e.code === 'Escape') closeAbilityMenu();
-    else if (/^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5));
+    else if (/^Digit[1-4]$/.test(e.code)) useAbility(+e.code.slice(5));
     return;
   }
   if (e.code === 'KeyP') { togglePause(); return; }
@@ -721,6 +721,8 @@ document.addEventListener('keydown', e => {
       if (energy >= ENERGY_LINES) openAbilityMenu();
       break;
     case 'KeyC':
+    case 'ShiftLeft':
+    case 'ShiftRight':
       holdPiece();
       break;
     case 'ArrowLeft':
