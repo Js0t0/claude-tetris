@@ -65,9 +65,10 @@ const SKINS = {
       c.shadowColor = color;
       c.shadowBlur = s * 0.5;
       c.fillStyle = color;
-      c.globalAlpha *= 0.25;
+      const a = c.globalAlpha;
+      c.globalAlpha = a * 0.35;
       c.fillRect(px + m, py + m, s - 2 * m, s - 2 * m);
-      c.globalAlpha /= 0.25;
+      c.globalAlpha = a;
       c.strokeStyle = color;
       c.lineWidth = 2;
       c.strokeRect(px + m, py + m, s - 2 * m, s - 2 * m);
@@ -613,7 +614,7 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
   context.globalAlpha = alpha ?? 1;
   skin.drawCell(context, x * size, y * size, size, skin.colors[colorIndex]);
   if (GLYPHS[colorIndex]) {
-    context.fillStyle = '#000';
+    context.fillStyle = skinKey === 'neon' ? '#fff' : '#000';
     context.font = `${size * 0.6}px sans-serif`;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
